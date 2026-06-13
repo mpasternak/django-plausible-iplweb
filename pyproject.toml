@@ -45,6 +45,7 @@ dev = [
     "pytest",
     "pytest-django",
     "pytest-cov",
+    "pre-commit",
 ]
 
 [project.urls]
@@ -57,6 +58,9 @@ include = ["plausible*"]
 
 [tool.setuptools.package-data]
 plausible = ["py.typed"]
+
+[tool.ruff]
+target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "N", "B", "A", "C4", "T20", "DJ"]
