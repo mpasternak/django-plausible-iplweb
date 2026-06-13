@@ -41,7 +41,6 @@ dev = [
     "django-plausible-iplweb[wagtail]",
     "ruff",
     "mypy",
-    "black",
     "pytest",
     "pytest-django",
     "pytest-cov",

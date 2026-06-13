@@ -104,6 +104,9 @@ celerybeat.pid
 # uv (library: lockfile not committed)
 uv.lock
 
+# Ruff
+.ruff_cache/
+
 # Environments
 .env
 .venv

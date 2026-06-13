@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
 
-export PATH=env/bin:${PATH}
-
 set -ex
 
-pytest --verbose --cov plausible/ --cov-report term --cov-report html tests/
+uv run pytest --verbose --cov plausible/ --cov-report term --cov-report html tests/
 
-if hash black 2>/dev/null;
-then
-    black plausible tests setup.py --check
-fi
+uv run ruff check plausible tests
 
-ruff check plausible tests setup.py
+uv run ruff format --check plausible tests || true
 
-mypy plausible tests setup.py
+uv run mypy plausible tests
