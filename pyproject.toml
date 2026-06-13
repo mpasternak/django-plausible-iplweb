@@ -11,6 +11,7 @@ requires-python = ">=3.10"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
 authors = [{ name = "Jake Howard" }]
+maintainers = [{ name = "Michał Pasternak", email = "michal.dtz@gmail.com" }]
 keywords = ["django", "plausible", "wagtail", "analytics"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

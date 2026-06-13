@@ -1,4 +1,4 @@
-# django-plausible
+# django-plausible-iplweb
 
 [![CI](https://github.com/mpasternak/django-plausible-iplweb/actions/workflows/ci.yml/badge.svg)](https://github.com/mpasternak/django-plausible-iplweb/actions/workflows/ci.yml)
 ![PyPI](https://img.shields.io/pypi/v/django-plausible-iplweb.svg)
@@ -68,3 +68,9 @@ To access the template tag, load `plausible_wagtail`, rather than `plausible`. T
 
 {% plausible %}
 ```
+
+## License
+
+This project is licensed under the **BSD 3-Clause License**. See the [LICENSE](LICENSE) file for details.
+
+This is a fork of [`django-plausible`](https://github.com/RealOrangeOne/django-plausible) by Jake Howard.
