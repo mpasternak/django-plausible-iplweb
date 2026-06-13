@@ -19,8 +19,8 @@ classifiers = [
     "Framework :: Django :: 5.2",
     "Framework :: Django :: 6.0",
     "Framework :: Wagtail",
-    "Framework :: Wagtail :: 5",
     "Framework :: Wagtail :: 6",
+    "Framework :: Wagtail :: 7",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
@@ -33,10 +33,10 @@ classifiers = [
     "Topic :: Software Development",
     "Typing :: Typed",
 ]
-dependencies = ["Django>=3.2"]
+dependencies = ["Django>=5.2"]
 
 [project.optional-dependencies]
-wagtail = ["wagtail>=4.0"]
+wagtail = ["wagtail>=7.0"]
 dev = [
     "django-plausible-iplweb[wagtail]",
     "ruff",
