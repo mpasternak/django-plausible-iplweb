@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=77.0"]
+requires = ["setuptools>=77.0", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "django-plausible-iplweb"
-version = "0.5.0"
+dynamic = ["version"]
 description = "Django module to provide easy Plausible integration, with Wagtail support"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -72,3 +72,5 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
+
+[tool.setuptools_scm]
