@@ -20,7 +20,11 @@ Then simply add `plausible` to `INSTALLED_APPS`.
 
 ## Usage
 
-`django-plausible` provides a `plausible` template tag, which can be used to output the required [script tag](https://plausible.io/docs/plausible-script) for Plausible.
+`django-plausible-iplweb` provides a `plausible` template tag that emits Plausible's
+current per-site tracking script. Each Plausible site now has its **own script URL**
+(e.g. `https://plausible.io/js/pa-XXXXXXXX.js`) — there is no `data-domain` attribute
+any more. Copy the script URL from your Plausible dashboard (**Site Settings → General →
+Site Installation**) into `PLAUSIBLE_SCRIPT_URL`, then place the tag in your `<head>`:
 
 ```html
 {% load plausible %}
@@ -28,46 +32,113 @@ Then simply add `plausible` to `INSTALLED_APPS`.
 {% plausible %}
 ```
 
-Will result in:
+With `PLAUSIBLE_SCRIPT_URL = "https://plausible.io/js/pa-XXXXXXXX.js"`, this renders:
 
 ```html
-<script defer data-domain="example.com" src="https://plausible.io/js/plausible.js"></script>
+<script defer src="https://plausible.io/js/pa-XXXXXXXX.js"></script>
+<script>
+  window.plausible = window.plausible || function () { (window.plausible.q = window.plausible.q || []).push(arguments) };
+  plausible.init({"autoCapturePageviews": false});
+  (function () {
+    var path = window.location.pathname;
+    var masks = [];
+    for (var i = 0; i < masks.length; i++) {
+      path = path.replace(new RegExp(masks[i].pattern, masks[i].flags || "g"), masks[i].replacement);
+    }
+    var url = window.location.origin + path + window.location.search;
+    plausible("pageview", { url: url });
+  })();
+</script>
 ```
+
+Automatic pageview capture is **disabled** (`autoCapturePageviews: false`) so the package
+can send a single, optionally-masked pageview itself (see [URL masking](#url-masking)).
+
+If `PLAUSIBLE_SCRIPT_URL` is empty (the default), the tag renders nothing — a convenient
+way to switch analytics off in development.
 
 ### Configuration
 
-Configuration can be changed either in `settings.py`, or when calling the `plausible` template tag:
+All configuration lives in `settings.py`:
 
-- `PLAUSIBLE_DOMAIN`: The domain Plausible is running on (defaults to `plausible.io`)
-- `PLAUSIBLE_SCRIPT_NAME`: The name of the script to use (defaults to `plausible.js`). See [script extensions](https://plausible.io/docs/script-extensions) for available options.
+| Setting | Default | Purpose |
+|---|---|---|
+| `PLAUSIBLE_SCRIPT_URL` | `""` | Full per-site script URL from your Plausible dashboard. Empty → tag renders nothing. |
+| `PLAUSIBLE_INIT_OPTIONS` | `{"autoCapturePageviews": False}` | Dict passed (as JSON) to [`plausible.init(...)`](https://plausible.io/docs/script-extensions). Add any init option here, e.g. `{"autoCapturePageviews": False, "hashBasedRouting": True}`. |
+| `PLAUSIBLE_URL_MASKS` | `[]` | Ordered list of client-side path-masking rules (see below). |
+| `PLAUSIBLE_KEEP_QUERY_STRING` | `True` | Append `location.search` to the reported URL (keeps `utm_*`/`ref` for acquisition reports). Set `False` to drop the query string entirely. |
 
-These settings will affect all calls to the `plausible` template tag. To override it at call time, you can also pass them into the template tag:
+You can also pass the script URL at call time, e.g. to use a different site on one page:
 
+```html
+{% plausible script_url="https://plausible.io/js/pa-OTHER.js" %}
 ```
-{% plausible plausible_domain="my-plausible.com" script_name="plausible.hash.js" %}
+
+### URL masking
+
+Plausible records the page URL. If your paths contain identifiers (invitation codes,
+user IDs, UUIDs, …) those would leak into your analytics. `PLAUSIBLE_URL_MASKS` lets you
+redact them **client-side** before the pageview is sent. Each rule is applied to
+`location.pathname` in order via JavaScript's
+[`String.replace(new RegExp(pattern, flags), replacement)`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replace):
+
+```python
+PLAUSIBLE_URL_MASKS = [
+    # Mask invitation/passphrase codes:  /i/<passphrase>  ->  /i/__code__
+    {"pattern": r"^/i/[^/]+", "replacement": "/i/__code__"},
+    # Mask UUIDs anywhere in the path:  /<uuid>  ->  /__id__
+    {"pattern": r"/[0-9a-f-]{36}", "replacement": "/__id__", "flags": "gi"},
+    # Mask numeric ids:  /123  ->  /__id__
+    {"pattern": r"/\d+", "replacement": "/__id__"},
+]
 ```
 
-By default, the domain (`data-domain`) used will be based on the request's hostname (using [`request.get_host()`](https://docs.djangoproject.com/en/dev/ref/request-response/#django.http.HttpRequest.get_host)). To override this, pass `site_domain` to the template tag.
+`pattern` and `flags` are **JavaScript** regular-expression syntax (the rules run in the
+browser). `flags` defaults to `"g"`. The patterns above are examples — adapt them to your
+own routes; the default (`[]`) applies no masking.
 
-If the ["compat" script](https://plausible.io/docs/script-extensions#plausiblecompatjs) is used, `django-plausible` will automatically add the required `id` to the `script` tag. It is excluded by default to help hide Plausible's presence.
+> **Caveat:** like Plausible's own [redaction guidance](https://plausible.io/docs/custom-locations),
+> this masking runs once when the page loads. It may not behave as expected in
+> single-page applications or with hash-based routing, where `location` changes
+> without a full page load.
+
+### Overriding the rendered markup
+
+The snippet is rendered from the `plausible/plausible.html` template. To fully customise
+it, shadow that path in your own project's templates directory.
 
 ## Usage with Wagtail
 
-Additionally, `django-plausible` provides an (optional) deep integration with [Wagtail](https://wagtail.io), allowing configuration through the Wagtail admin. To enable this, additionally add `plausible.contrib.wagtail` to `INSTALLED_APPS`.
+`django-plausible-iplweb` also provides an optional [Wagtail](https://wagtail.org)
+integration that lets editors set the script URL **per site** through the Wagtail admin.
+Add `plausible.contrib.wagtail` to `INSTALLED_APPS` and run `migrate`.
 
-Configuration is done through the "Plausible Analytics" [setting](https://docs.wagtail.io/en/stable/reference/contrib/settings.html#settings):
+Configuration is done through the "Plausible Analytics"
+[setting](https://docs.wagtail.org/en/stable/reference/contrib/settings.html):
 
-- `site_domain`: the value for `data-domain`. If left blank (the default), the request's hostname will be used (as above), **not** the site hostname.
-- `plausible_domain`: The domain Plausible is running on (as above)
-- `script_name`: The name of the script to use (as above)
+- `script_url`: the full per-site Plausible script URL. Blank (the default) → nothing is rendered for that site.
 
-To access the template tag, load `plausible_wagtail`, rather than `plausible`. The template tag itself is still `plausible`. Note that unlike the Django variant, the Wagtail template tag doesn't allow options to be passed.
+Masking (`PLAUSIBLE_URL_MASKS`), init options, and query-string handling are still
+configured globally via the Django settings above.
+
+Load `plausible_wagtail` rather than `plausible`; the tag itself is still `plausible`:
 
 ```html
 {% load plausible_wagtail %}
 
 {% plausible %}
 ```
+
+## Migrating from 0.5.x
+
+Version 0.6.0 is a clean break to match Plausible's new tracker. Update your settings:
+
+| Old (0.5.x) | New (0.6.0) |
+|---|---|
+| `PLAUSIBLE_DOMAIN` + `PLAUSIBLE_SCRIPT_NAME` | `PLAUSIBLE_SCRIPT_URL` (the full script URL from your dashboard) |
+| `data-domain` (request host / `site_domain`) | *(gone — the site is identified by the script URL)* |
+| `{% plausible site_domain=… plausible_domain=… script_name=… %}` | `{% plausible %}` (optionally `script_url=…`) |
+| Wagtail `site_domain` / `plausible_domain` / `script_name` fields | Wagtail `script_url` field (migration `0002` applies the change) |
 
 ## License
 
