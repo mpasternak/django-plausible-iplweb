@@ -1,3 +1,74 @@
-[tool.ruff]
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-plausible-iplweb"
+version = "0.5.0"
+description = "Django module to provide easy Plausible integration, with Wagtail support"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+authors = [{ name = "Jake Howard" }]
+keywords = ["django", "plausible", "wagtail", "analytics"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 5.2",
+    "Framework :: Django :: 6.0",
+    "Framework :: Wagtail",
+    "Framework :: Wagtail :: 5",
+    "Framework :: Wagtail :: 6",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development",
+    "Typing :: Typed",
+]
+dependencies = ["Django>=3.2"]
+
+[project.optional-dependencies]
+wagtail = ["wagtail>=4.0"]
+dev = [
+    "django-plausible-iplweb[wagtail]",
+    "ruff",
+    "mypy",
+    "black",
+    "pytest",
+    "pytest-django",
+    "pytest-cov",
+]
+
+[project.urls]
+Homepage = "https://github.com/mpasternak/django-plausible-iplweb"
+Repository = "https://github.com/mpasternak/django-plausible-iplweb"
+Issues = "https://github.com/mpasternak/django-plausible-iplweb/issues"
+
+[tool.setuptools.packages.find]
+include = ["plausible*"]
+
+[tool.setuptools.package-data]
+plausible = ["py.typed"]
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "W", "N", "B", "A", "C4", "T20", "DJ"]
 ignore = ["E501"]
+
+[tool.mypy]
+mypy_path = "stubs"
+no_implicit_optional = true
+warn_unused_ignores = true
+strict_optional = true
+check_untyped_defs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
