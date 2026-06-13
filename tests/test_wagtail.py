@@ -1,10 +1,10 @@
 import pytest
-from django.core.exceptions import ValidationError
 from pytest_django.asserts import assertInHTML
 from wagtail.models import Site
 
 from plausible.contrib.wagtail.models import PlausibleSettings
-from plausible.contrib.wagtail.validators import PlausibleScriptNameValidator
+
+SCRIPT_URL = "https://plausible.io/js/pa-WAG999.js"
 
 
 @pytest.fixture
@@ -13,62 +13,42 @@ def plausible_settings():
 
 
 @pytest.mark.django_db
-def test_simple_template_view(client):
-    response = client.get("/simple-wagtail", HTTP_HOST="example.com")
+def test_renders_script_from_site_setting(client, plausible_settings):
+    plausible_settings.script_url = SCRIPT_URL
+    plausible_settings.save()
+    response = client.get("/simple-wagtail")
     assert response.status_code == 200
     assertInHTML(
-        '<script defer data-domain="example.com" src="https://plausible.io/js/plausible.js"></script>',
+        f'<script defer src="{SCRIPT_URL}"></script>',
         response.content.decode(),
     )
 
 
 @pytest.mark.django_db
-def test_hostname_from_settings(client, plausible_settings):
-    plausible_settings.site_domain = "from-settings.com"
+def test_renders_init_snippet(client, plausible_settings):
+    plausible_settings.script_url = SCRIPT_URL
     plausible_settings.save()
     response = client.get("/simple-wagtail")
-    assert response.status_code == 200
-    assertInHTML(
-        '<script defer data-domain="from-settings.com" src="https://plausible.io/js/plausible.js"></script>',
-        response.content.decode(),
-    )
+    assert "plausible.init(" in response.content.decode()
 
 
 @pytest.mark.django_db
-def test_script_name_from_settings(client, plausible_settings):
-    plausible_settings.script_name = "plausible.hash.js"
-    plausible_settings.save()
+def test_blank_script_url_renders_nothing(client, plausible_settings):
+    # script_url defaults to blank -> no tracker emitted
     response = client.get("/simple-wagtail")
     assert response.status_code == 200
-    assertInHTML(
-        '<script defer data-domain="testserver" src="https://plausible.io/js/plausible.hash.js"></script>',
-        response.content.decode(),
-    )
+    assert "plausible.init(" not in response.content.decode()
 
 
 @pytest.mark.django_db
-def test_plausible_domain_from_settings(client, plausible_settings):
-    plausible_settings.plausible_domain = "my-plausible.com"
+def test_global_masks_apply_to_wagtail(client, plausible_settings, settings):
+    settings.PLAUSIBLE_URL_MASKS = [
+        {"pattern": "^/i/[^/]+", "replacement": "/i/__code__"},
+    ]
+    plausible_settings.script_url = SCRIPT_URL
     plausible_settings.save()
     response = client.get("/simple-wagtail")
-    assert response.status_code == 200
-    assertInHTML(
-        '<script defer data-domain="testserver" src="https://my-plausible.com/js/plausible.js"></script>',
-        response.content.decode(),
-    )
-
-
-@pytest.mark.parametrize(
-    "script_name", ["plausible.js", "plausible.hash.js", "plausible.hash.compat.js"]
-)
-def test_validates_script_name(script_name):
-    PlausibleScriptNameValidator()(script_name)
-
-
-@pytest.mark.parametrize("script_name", ["/js/plausible.js", "left-pad.js"])
-def test_invalid_script_name(script_name):
-    with pytest.raises(ValidationError):
-        PlausibleScriptNameValidator()(script_name)
+    assert '"replacement": "/i/__code__"' in response.content.decode()
 
 
 def test_app_label():

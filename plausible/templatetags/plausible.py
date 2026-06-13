@@ -1,36 +1,65 @@
+import json
+
 from django import template
 from django.conf import settings
-from django.forms.utils import flatatt
-from django.utils.html import escape
-from django.utils.safestring import mark_safe
-
-from plausible.utils import is_valid_plausible_script
+from django.template.loader import render_to_string
+from django.utils.safestring import SafeString, mark_safe
 
 register = template.Library()
 
+# Default options passed to plausible.init(...). Automatic pageview capture is
+# disabled so we can send a single manually-masked pageview instead.
+DEFAULT_INIT_OPTIONS = {"autoCapturePageviews": False}
 
-@register.simple_tag(takes_context=True)
-def plausible(context, site_domain=None, plausible_domain=None, script_name=None):
-    request = context["request"]
+# Escapes that make a JSON literal safe to embed inside a <script> block,
+# matching the escaping Django's json_script applies.
+_JSON_SCRIPT_ESCAPES = {
+    ord("<"): "\\u003c",
+    ord(">"): "\\u003e",
+    ord("&"): "\\u0026",
+    0x2028: "\\u2028",  # line separator
+    0x2029: "\\u2029",  # paragraph separator
+}
 
-    if plausible_domain is None:
-        plausible_domain = getattr(settings, "PLAUSIBLE_DOMAIN", "plausible.io")
-    if script_name is None:
-        script_name = getattr(settings, "PLAUSIBLE_SCRIPT_NAME", "plausible.js")
-    if site_domain is None:
-        site_domain = escape(request.get_host())  # In case of XSS
 
-    if not is_valid_plausible_script(script_name):
-        raise ValueError(f"Invalid plausible script name: {script_name}")
+def _safe_json(value) -> SafeString:
+    """Serialize ``value`` to JSON that is safe to embed in a <script> block."""
+    return mark_safe(json.dumps(value).translate(_JSON_SCRIPT_ESCAPES))
 
-    attrs = {
-        "defer": True,
-        "data-domain": site_domain,
-        "src": f"https://{plausible_domain}/js/{script_name}",
-    }
 
-    # Add a target id for use with compat script
-    if "compat" in script_name:
-        attrs["id"] = "plausible"
+def render_plausible(
+    script_url,
+    *,
+    init_options=None,
+    url_masks=None,
+    keep_query_string=None,
+) -> SafeString:
+    """Render the Plausible tracker snippet, or "" when no script URL is set."""
+    if not script_url:
+        return mark_safe("")
 
-    return mark_safe(f"<script{flatatt(attrs)}></script>")
+    if init_options is None:
+        init_options = getattr(settings, "PLAUSIBLE_INIT_OPTIONS", DEFAULT_INIT_OPTIONS)
+    if url_masks is None:
+        url_masks = getattr(settings, "PLAUSIBLE_URL_MASKS", [])
+    if keep_query_string is None:
+        keep_query_string = getattr(settings, "PLAUSIBLE_KEEP_QUERY_STRING", True)
+
+    return mark_safe(
+        render_to_string(
+            "plausible/plausible.html",
+            {
+                "plausible_script_url": script_url,
+                "plausible_init_options": _safe_json(init_options),
+                "plausible_url_masks": _safe_json(url_masks),
+                "plausible_keep_query_string": keep_query_string,
+            },
+        )
+    )
+
+
+@register.simple_tag
+def plausible(script_url=None) -> SafeString:
+    if script_url is None:
+        script_url = getattr(settings, "PLAUSIBLE_SCRIPT_URL", "")
+    return render_plausible(script_url)

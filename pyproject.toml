@@ -57,7 +57,7 @@ Issues = "https://github.com/mpasternak/django-plausible-iplweb/issues"
 include = ["plausible*"]
 
 [tool.setuptools.package-data]
-plausible = ["py.typed"]
+plausible = ["py.typed", "templates/**/*.html"]
 
 [tool.ruff]
 target-version = "py310"

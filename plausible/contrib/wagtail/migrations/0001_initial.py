@@ -3,8 +3,6 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
-import plausible.contrib.wagtail.validators
-
 
 class Migration(migrations.Migration):
 
@@ -47,9 +45,6 @@ class Migration(migrations.Migration):
                     models.CharField(
                         default="plausible.js",
                         max_length=255,
-                        validators=[
-                            plausible.contrib.wagtail.validators.PlausibleScriptNameValidator()
-                        ],
                     ),
                 ),
                 (

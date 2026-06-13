@@ -1,29 +1,13 @@
 from django.db import models
-from wagtail.contrib.settings.models import register_setting
-
-# FIXME: Remove after support for Wagtail 5.0 is dropped
-try:
-    from wagtail.contrib.settings.models import BaseSiteSetting
-except ImportError:
-    # Prior to Wagtail 3.0, the only setting available was based on the Site
-    from wagtail.contrib.settings.models import BaseSetting as BaseSiteSetting
-
-from .validators import PlausibleScriptNameValidator
+from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
 
 
 @register_setting
 class PlausibleSettings(BaseSiteSetting):
-    site_domain = models.CharField(max_length=255, null=False, blank=True)
-    plausible_domain = models.CharField(
-        max_length=255,
-        null=False,
+    script_url = models.URLField(
+        max_length=500,
         blank=True,
-        default="plausible.io",
-    )
-    script_name = models.CharField(
-        max_length=255,
-        validators=[PlausibleScriptNameValidator()],
-        default="plausible.js",
+        help_text="Full Plausible script URL, e.g. https://plausible.io/js/pa-XXXXXXXX.js",
     )
 
     class Meta:
