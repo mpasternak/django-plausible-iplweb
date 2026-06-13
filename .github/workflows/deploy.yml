@@ -8,19 +8,20 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
         with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip wheel
-          pip install setuptools twine
-      - name: Build and publish
+          fetch-depth: 0  # full history + tags so setuptools-scm derives the version
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build package
+        run: uv build
+
+      # NOTE: still using a PyPI token (secrets.PYPI_PASSWORD). Consider migrating
+      # to PyPI Trusted Publishing (OIDC) so no token needs to live in repo secrets.
+      - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          python setup.py sdist bdist_wheel
-          twine upload dist/*
+        run: uv run --with twine twine upload dist/*

@@ -1,10 +1,11 @@
 # django-plausible
 
-![CI](https://github.com/RealOrangeOne/django-plausible/workflows/CI/badge.svg)
-![PyPI](https://img.shields.io/pypi/v/django-plausible.svg)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/django-plausible.svg)
-![PyPI - Status](https://img.shields.io/pypi/status/django-plausible.svg)
-![PyPI - License](https://img.shields.io/pypi/l/django-plausible.svg)
+[![CI](https://github.com/mpasternak/django-plausible-iplweb/actions/workflows/ci.yml/badge.svg)](https://github.com/mpasternak/django-plausible-iplweb/actions/workflows/ci.yml)
+![PyPI](https://img.shields.io/pypi/v/django-plausible-iplweb.svg)
+![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)
+![Django](https://img.shields.io/badge/django-5.2%20%7C%206.0-blue)
+![PyPI - Status](https://img.shields.io/pypi/status/django-plausible-iplweb.svg)
+![PyPI - License](https://img.shields.io/pypi/l/django-plausible-iplweb.svg)
 
 
 Django module to provide easy [Plausible](https://plausible.io/) integration, with [Wagtail](https://wagtail.io/) support.
@@ -12,7 +13,7 @@ Django module to provide easy [Plausible](https://plausible.io/) integration, wi
 ## Installation
 
 ```
-pip install django-plausible
+pip install django-plausible-iplweb
 ```
 
 Then simply add `plausible` to `INSTALLED_APPS`.
