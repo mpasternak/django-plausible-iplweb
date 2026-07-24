@@ -49,6 +49,7 @@ dev = [
 ]
 
 [project.urls]
+Funding = "https://buymeacoffee.com/mpasternak"
 Homepage = "https://github.com/mpasternak/django-plausible-iplweb"
 Repository = "https://github.com/mpasternak/django-plausible-iplweb"
 Issues = "https://github.com/mpasternak/django-plausible-iplweb/issues"
