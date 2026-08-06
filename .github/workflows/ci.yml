@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         # Derived from requires-python (>=3.10) + Django floor (>=5.2) +
-        # canonical Django x Python compatibility. Django 6.0 needs Python >=3.12.
+        # canonical Django x Python compatibility. Django 6.0 and 6.1 need Python >=3.12.
         include:
           # Django 5.2 LTS
           - { python-version: "3.10", django-version: "5.2" }
@@ -23,6 +23,10 @@ jobs:
           - { python-version: "3.12", django-version: "6.0" }
           - { python-version: "3.13", django-version: "6.0" }
           - { python-version: "3.14", django-version: "6.0" }
+          # Django 6.1
+          - { python-version: "3.12", django-version: "6.1" }
+          - { python-version: "3.13", django-version: "6.1" }
+          - { python-version: "3.14", django-version: "6.1" }
     steps:
       - uses: actions/checkout@v4
         with:
