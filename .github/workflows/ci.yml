@@ -40,11 +40,17 @@ jobs:
 
       - name: Install dependencies (project + Django ${{ matrix.django-version }})
         run: |
-          uv sync --all-extras
+          uv sync --all-extras --python ${{ matrix.python-version }}
           uv pip install "django~=${{ matrix.django-version }}.0"
 
+      - name: Show resolved versions
+        run: .venv/bin/python -c "import sys, django; print('PY:', sys.version); print('DJANGO:', django.get_version())"
+
+      # --no-sync is required: a plain `uv run` re-syncs the environment from
+      # uv.lock and silently undoes the `uv pip install django~=X.Y.0` pin above,
+      # so every matrix cell would end up testing the same locked Django.
       - name: Run tests
-        run: uv run pytest --verbose --cov plausible/ --cov-report term tests/
+        run: uv run --no-sync pytest --verbose --cov plausible/ --cov-report term tests/
 
   lint:
     runs-on: ubuntu-latest
