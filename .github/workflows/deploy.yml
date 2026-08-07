@@ -1,14 +1,38 @@
 name: Upload Python Package
 
+# Publishes to PyPI when a GitHub Release is published.
+#
+# Uses PyPI Trusted Publishing (OpenID Connect): GitHub mints a short-lived
+# token scoped to this exact workflow, so no API token lives in repo secrets.
+# The previous mechanism (twine + secrets.PYPI_PASSWORD) died with
+# "403 Forbidden" on the 0.6.2 release and had to be worked around locally.
+#
+# One-time setup on PyPI — Manage project -> Publishing -> Add a new publisher:
+#
+#   PyPI project name: django-plausible-iplweb
+#   Owner:             mpasternak
+#   Repository name:   django-plausible-iplweb
+#   Workflow name:     deploy.yml
+#   Environment name:  pypi
+#
+# Without that entry the publish job fails with
+# "invalid-publisher: valid token, but no corresponding publisher".
+
 on:
   release:
-    types: [created]
+    types: [published]
+  # Lets you re-run the publish against an existing tag if a release job failed
+  # halfway. Run it with "Use workflow from" pointed at the tag, not at master —
+  # from a branch tip setuptools-scm would produce a .devN version, which the
+  # guard below rejects.
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  deploy:
+  build:
+    name: Build distributions
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,13 +42,46 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
 
-      - name: Build package
+      - name: Build sdist and wheel
         run: uv build
 
-      # NOTE: still using a PyPI token (secrets.PYPI_PASSWORD). Consider migrating
-      # to PyPI Trusted Publishing (OIDC) so no token needs to live in repo secrets.
+      # setuptools-scm silently falls back to 0.1.dev1+g<sha> when it cannot see
+      # the tags. Catch that here rather than after an unretractable upload.
+      - name: Refuse to publish a development version
+        run: |
+          if ls dist/ | grep -q '\.dev'; then
+            echo "Built a development version — setuptools-scm did not see the tag:" >&2
+            ls dist/ >&2
+            exit 1
+          fi
+          ls dist/
+
+      - name: Check package metadata
+        run: uv run --with twine twine check dist/*
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI (trusted publishing)
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/django-plausible-iplweb/
+    permissions:
+      # Required for trusted publishing: this is what lets GitHub mint the OIDC
+      # token PyPI exchanges for a short-lived upload credential.
+      id-token: write
+    steps:
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
       - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: uv run --with twine twine upload dist/*
+        uses: pypa/gh-action-pypi-publish@release/v1
