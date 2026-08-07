@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         # Derived from requires-python (>=3.10) + Django floor (>=5.2) +
-        # canonical Django x Python compatibility. Django 6.0 needs Python >=3.12.
+        # canonical Django x Python compatibility. Django 6.0 and 6.1 need Python >=3.12.
         include:
           # Django 5.2 LTS
           - { python-version: "3.10", django-version: "5.2" }
@@ -23,6 +23,10 @@ jobs:
           - { python-version: "3.12", django-version: "6.0" }
           - { python-version: "3.13", django-version: "6.0" }
           - { python-version: "3.14", django-version: "6.0" }
+          # Django 6.1
+          - { python-version: "3.12", django-version: "6.1" }
+          - { python-version: "3.13", django-version: "6.1" }
+          - { python-version: "3.14", django-version: "6.1" }
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,11 +40,17 @@ jobs:
 
       - name: Install dependencies (project + Django ${{ matrix.django-version }})
         run: |
-          uv sync --all-extras
+          uv sync --all-extras --python ${{ matrix.python-version }}
           uv pip install "django~=${{ matrix.django-version }}.0"
 
+      - name: Show resolved versions
+        run: .venv/bin/python -c "import sys, django; print('PY:', sys.version); print('DJANGO:', django.get_version())"
+
+      # --no-sync is required: a plain `uv run` re-syncs the environment from
+      # uv.lock and silently undoes the `uv pip install django~=X.Y.0` pin above,
+      # so every matrix cell would end up testing the same locked Django.
       - name: Run tests
-        run: uv run pytest --verbose --cov plausible/ --cov-report term tests/
+        run: uv run --no-sync pytest --verbose --cov plausible/ --cov-report term tests/
 
   lint:
     runs-on: ubuntu-latest
